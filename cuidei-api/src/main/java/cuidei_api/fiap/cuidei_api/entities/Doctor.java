@@ -1,17 +1,13 @@
 package cuidei_api.fiap.cuidei_api.entities;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.Data;
 
 @Entity
-@Table(name = "doctor")
+@Table(name = "doctors")
 @Data
-public class Doctor {
+public class Doctor extends User {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    private String name;
     private String specialty;
 }
