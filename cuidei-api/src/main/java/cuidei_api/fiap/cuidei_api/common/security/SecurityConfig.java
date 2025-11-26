@@ -1,8 +1,7 @@
-package cuidei_api.fiap.cuidei_api.security;
+package cuidei_api.fiap.cuidei_api.common.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -27,11 +26,18 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
                 .authorizeHttpRequests(auth -> auth
-                        //Adaptar para todas as URLs
-                        .requestMatchers(HttpMethod.GET, "/api/v1/patient").hasAnyRole("PATIENT")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/doctor").hasAnyRole("DOCTOR")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/nurse").hasAnyRole("NURSE")
-                ).httpBasic(Customizer.withDefaults());
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**"
+                        ).permitAll()
+                        .requestMatchers("/patient/**").hasRole("PATIENT")
+                        .requestMatchers("/doctor/**").hasRole("DOCTOR")
+                        .requestMatchers("/nurse/**").hasRole("NURSE")
+                        .anyRequest().authenticated()
+                )
+                .httpBasic(Customizer.withDefaults());
+
         return http.build();
     }
 
@@ -64,4 +70,3 @@ public class SecurityConfig {
         return new InMemoryUserDetailsManager(doctor, nurse, patient);
     }
 }
-
