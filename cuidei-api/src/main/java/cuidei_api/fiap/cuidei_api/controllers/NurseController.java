@@ -31,6 +31,7 @@ public class NurseController implements NurseApi {
      * @param id o identificador único da enfermeira.
      * @return uma ResponseEntity contendo a lista de AppointmentDtoApi convertidos.
      */
+    @Override
     @PreAuthorize("hasRole('NURSE')")
     public ResponseEntity<List<AppointmentDtoApi>> getAppointments(@PathVariable Long id) {
         List<Appointment> appointments = nurseService.findAppointments(id);
@@ -42,6 +43,7 @@ public class NurseController implements NurseApi {
      * @param appointment DTO contendo os dados da consulta a ser registrada.
      * @return uma ResponseEntity contendo o AppointmentDtoApi salvo.
      */
+    @Override
     @PreAuthorize("hasRole('NURSE')")
     public ResponseEntity<AppointmentDtoApi> registerAppointment(@RequestBody AppointmentDtoApi appointment) {
         Appointment entity = AppointmentMapper.toEntity(appointment);
