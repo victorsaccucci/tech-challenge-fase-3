@@ -1,4 +1,4 @@
-package cuidei_api.fiap.cuidei_api.common.config.swagger.openapi.dto;
+package cuidei_api.fiap.cuidei_api.common.swagger.openapi.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;

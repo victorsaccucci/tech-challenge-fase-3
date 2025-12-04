@@ -1,7 +1,7 @@
 package cuidei_api.fiap.cuidei_api.controllers;
 
-import cuidei_api.fiap.cuidei_api.common.config.swagger.openapi.controller.NurseApi;
-import cuidei_api.fiap.cuidei_api.common.config.swagger.openapi.dto.AppointmentDtoApi;
+import cuidei_api.fiap.cuidei_api.common.swagger.openapi.controller.NurseApi;
+import cuidei_api.fiap.cuidei_api.common.swagger.openapi.dto.AppointmentDtoApi;
 import cuidei_api.fiap.cuidei_api.entities.Appointment;
 import cuidei_api.fiap.cuidei_api.mapper.AppointmentMapper;
 import cuidei_api.fiap.cuidei_api.services.NurseService;
@@ -19,7 +19,6 @@ import java.util.List;
 public class NurseController implements NurseApi {
 
     private final NurseService nurseService;
-    private AppointmentMapper appointmentMapper;
 
     public NurseController(NurseService nurseService) {
         this.nurseService = nurseService;

@@ -1,10 +1,8 @@
-package cuidei_api.fiap.cuidei_api.common.config.swagger.openapi.controller;
+package cuidei_api.fiap.cuidei_api.common.swagger.openapi.controller;
 
-import cuidei_api.fiap.cuidei_api.common.config.swagger.openapi.dto.AppointmentDtoApi;
+import cuidei_api.fiap.cuidei_api.common.swagger.openapi.dto.AppointmentDtoApi;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
