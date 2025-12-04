@@ -24,6 +24,6 @@ public class DoctorService {
 
     @Transactional
     public Appointment updateAppointment(Long id, Appointment updatedData) {
-        return appointmentRepository.save(updatedData);
+        return appointmentRepository.findByIdWithRelations(id).orElse(null);
     }
 }

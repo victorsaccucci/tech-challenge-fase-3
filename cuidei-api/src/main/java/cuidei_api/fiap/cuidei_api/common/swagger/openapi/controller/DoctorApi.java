@@ -44,7 +44,7 @@ public interface DoctorApi {
                 description = "Permite que o médico altere os dados de um agendamento existente."
         )
         @ApiResponses({
-                @ApiResponse(responseCode = "200", description = "Consulta atualizada", content = @Content(schema = @Schema(implementation = AppointmentDtoApi.class))),
+                @ApiResponse(responseCode = "200", description = "Consulta atualizada", content = @Content(schema = @Schema(implementation = DoctorUpdateAppointmentDtoApi.class))),
                 @ApiResponse(responseCode = "404", description = "Consulta não encontrada"),
                 @ApiResponse(responseCode = "400", description = "Dados inválidos enviados")
         })
