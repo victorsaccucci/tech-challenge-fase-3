@@ -22,6 +22,10 @@ public class Appointment {
     @JoinColumn(name = "patient_id")
     private Patient patient;
 
+    @ManyToOne
+    @JoinColumn(name = "nurse_id")
+    private Nurse nurse;
+
     private LocalDateTime dateTime;
 
     private String reason;
