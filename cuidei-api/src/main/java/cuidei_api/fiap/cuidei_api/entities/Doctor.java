@@ -1,13 +1,27 @@
 package cuidei_api.fiap.cuidei_api.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
 import lombok.Data;
+import java.util.List;
 
+@Data
 @Entity
 @Table(name = "doctors")
-@Data
-public class Doctor extends User {
+public class Doctor {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    private String crm;
 
     private String specialty;
+
+    // Relacionamento com consultas (Appointments)
+    @OneToMany(mappedBy = "doctor")
+    @JsonIgnore
+    private List<Appointment> appointments;
 }
