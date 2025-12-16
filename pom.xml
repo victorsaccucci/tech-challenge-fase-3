@@ -17,8 +17,9 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>cuidei-api</module>
-        <module>avisei-api</module>
+        <module>serviceschedule-api</module>
+        <module>servicenotify-api</module>
+        <module>servicehistory-api</module>
     </modules>
     <build>
         <plugins>
