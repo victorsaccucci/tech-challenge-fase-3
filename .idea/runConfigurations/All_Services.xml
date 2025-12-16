@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="All Services" type="CompoundRunConfigurationType">
+    <toRun name="ServiceHistoryApiApplication" type="SpringBootApplicationConfigurationType" />
+    <toRun name="ServicenotifyApiApplication" type="SpringBootApplicationConfigurationType" />
+    <toRun name="ServicescheduleApiApplication" type="SpringBootApplicationConfigurationType" />
+    <method v="2" />
+  </configuration>
+</component>

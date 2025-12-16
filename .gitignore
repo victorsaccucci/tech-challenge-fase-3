@@ -1,5 +1,9 @@
-# IDE
-.idea/
+# IDE - manter apenas configurações úteis para a equipe
+.idea/*
+!.idea/compiler.xml
+!.idea/misc.xml
+!.idea/modules.xml
+!.idea/runConfigurations/
 *.iml
 *.iws
 
