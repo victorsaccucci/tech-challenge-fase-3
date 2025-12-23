@@ -1,48 +1,124 @@
 package serviceschedule_api.fiap.serviceschedule_api.services;
 
-import serviceschedule_api.fiap.serviceschedule_api.entities.Appointment;
-import serviceschedule_api.fiap.serviceschedule_api.entities.Patient;
-import serviceschedule_api.fiap.serviceschedule_api.repositories.AppointmentRepository;
-import serviceschedule_api.fiap.serviceschedule_api.repositories.PatientRepository;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
+import serviceschedule_api.fiap.serviceschedule_api.entities.Appointment;
+import serviceschedule_api.fiap.serviceschedule_api.entities.User;
+import serviceschedule_api.fiap.serviceschedule_api.enums.AppointmentStatus;
+import serviceschedule_api.fiap.serviceschedule_api.enums.UserRole;
+import serviceschedule_api.fiap.serviceschedule_api.repositories.AppointmentRepository;
+import serviceschedule_api.fiap.serviceschedule_api.repositories.UserRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class AppointmentService {
-
+    
     private final AppointmentRepository appointmentRepository;
-    private final PatientRepository patientRepository;
-
-    public AppointmentService(AppointmentRepository appointmentRepository, PatientRepository patientRepository) {
+    private final UserRepository userRepository;
+    private final RabbitTemplate rabbitTemplate;
+    
+    public AppointmentService(AppointmentRepository appointmentRepository, 
+                            UserRepository userRepository, 
+                            RabbitTemplate rabbitTemplate) {
         this.appointmentRepository = appointmentRepository;
-        this.patientRepository = patientRepository;
+        this.userRepository = userRepository;
+        this.rabbitTemplate = rabbitTemplate;
     }
-
-    public List<Appointment> findAll() {
-        return appointmentRepository.findAll();
+    
+    public Appointment createAppointment(Long patientId, Long doctorId, LocalDateTime appointmentDate, String notes) {
+        User patient = userRepository.findById(patientId)
+            .orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+        
+        User doctor = userRepository.findById(doctorId)
+            .orElseThrow(() -> new RuntimeException("Médico não encontrado"));
+        
+        if (doctor.getRole() != UserRole.DOCTOR) {
+            throw new RuntimeException("Usuário não é um médico");
+        }
+        
+        // Verificar conflitos de horário
+        List<Appointment> conflicts = appointmentRepository.findByDoctorAndDateRange(
+            doctor, appointmentDate.minusMinutes(30), appointmentDate.plusMinutes(30));
+        
+        if (!conflicts.isEmpty()) {
+            throw new RuntimeException("Horário não disponível");
+        }
+        
+        Appointment appointment = new Appointment();
+        appointment.setPatient(patient);
+        appointment.setDoctor(doctor);
+        appointment.setAppointmentDate(appointmentDate);
+        appointment.setStatus(AppointmentStatus.SCHEDULED);
+        appointment.setNotes(notes);
+        
+        appointment = appointmentRepository.save(appointment);
+        
+        // Enviar notificação assíncrona
+        sendNotification(appointment, "APPOINTMENT_CREATED");
+        
+        return appointment;
     }
-
-    public Appointment findById(Long id) {
-        return appointmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+    
+    public List<Appointment> getAppointmentsByPatient(Long patientId) {
+        User patient = userRepository.findById(patientId)
+            .orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+        return appointmentRepository.findByPatient(patient);
     }
-
-    public List<Appointment> findByPatient_Id(Long patientId) {
-        return appointmentRepository.findByPatient_Id(patientId);
+    
+    public List<Appointment> getAppointmentsByDoctor(Long doctorId) {
+        User doctor = userRepository.findById(doctorId)
+            .orElseThrow(() -> new RuntimeException("Médico não encontrado"));
+        return appointmentRepository.findByDoctor(doctor);
     }
-
-    public Appointment save(Appointment appt) {
-        return appointmentRepository.save(appt);
+    
+    public Appointment updateAppointmentStatus(Long appointmentId, AppointmentStatus status) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+            .orElseThrow(() -> new RuntimeException("Agendamento não encontrado"));
+        
+        appointment.setStatus(status);
+        appointment = appointmentRepository.save(appointment);
+        
+        // Enviar notificação de mudança de status
+        sendNotification(appointment, "APPOINTMENT_STATUS_CHANGED");
+        
+        return appointment;
     }
-
-    public Appointment update(Long id, Appointment updated) {
-        Appointment original = findById(id);
-
-        original.setDateTime(updated.getDateTime());
-        original.setDoctor(updated.getDoctor());
-        original.setPatient(updated.getPatient());
-
-        return appointmentRepository.save(original);
+    
+    private void sendNotification(Appointment appointment, String eventType) {
+        try {
+            NotificationMessage message = new NotificationMessage();
+            message.setAppointmentId(appointment.getId());
+            message.setPatientEmail(appointment.getPatient().getEmail());
+            message.setDoctorEmail(appointment.getDoctor().getEmail());
+            message.setAppointmentDate(appointment.getAppointmentDate());
+            message.setEventType(eventType);
+            
+            rabbitTemplate.convertAndSend("appointment.exchange", "appointment.notification", message);
+        } catch (Exception e) {
+            // Log error but don't fail the main operation
+            System.err.println("Failed to send notification: " + e.getMessage());
+        }
+    }
+    
+    public static class NotificationMessage {
+        private Long appointmentId;
+        private String patientEmail;
+        private String doctorEmail;
+        private LocalDateTime appointmentDate;
+        private String eventType;
+        
+        // Getters and setters
+        public Long getAppointmentId() { return appointmentId; }
+        public void setAppointmentId(Long appointmentId) { this.appointmentId = appointmentId; }
+        public String getPatientEmail() { return patientEmail; }
+        public void setPatientEmail(String patientEmail) { this.patientEmail = patientEmail; }
+        public String getDoctorEmail() { return doctorEmail; }
+        public void setDoctorEmail(String doctorEmail) { this.doctorEmail = doctorEmail; }
+        public LocalDateTime getAppointmentDate() { return appointmentDate; }
+        public void setAppointmentDate(LocalDateTime appointmentDate) { this.appointmentDate = appointmentDate; }
+        public String getEventType() { return eventType; }
+        public void setEventType(String eventType) { this.eventType = eventType; }
     }
 }

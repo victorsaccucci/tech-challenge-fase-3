@@ -1,0 +1,95 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: hospitech-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 60s
+
+  postgres:
+    image: postgres:15
+    container_name: hospitech-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: hospitech_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d hospitech_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  schedule-api:
+    build:
+      context: .
+      dockerfile: ./serviceschedule-api/Dockerfile
+    container_name: hospitech-schedule-api
+    ports:
+      - "8081:8081"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hospitech_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+    restart: unless-stopped
+
+  history-api:
+    build:
+      context: .
+      dockerfile: ./servicehistory-api/Dockerfile
+    container_name: hospitech-history-api
+    ports:
+      - "8082:8082"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hospitech_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+    restart: unless-stopped
+
+  notify-api:
+    build:
+      context: .
+      dockerfile: ./servicenotify-api/Dockerfile
+    container_name: hospitech-notify-api
+    ports:
+      - "8083:8083"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_RABBITMQ_HOST=rabbitmq
+    restart: unless-stopped
+
+volumes:
+  rabbitmq_data:
+  postgres_data:

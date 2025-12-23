@@ -3,7 +3,6 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-
 	<parent>
 		<groupId>br.techchallenge</groupId>
 		<artifactId>tech-challenge-fase-3</artifactId>
@@ -11,26 +10,12 @@
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
+	<groupId>servicehistory-api.fiap</groupId>
 	<artifactId>servicehistory-api</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<groupId>servicehistory-api.fiap</groupId>
-
 	<name>servicehistory-api</name>
-
 	<description>Demo project for Spring Boot</description>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
+
 	<properties>
 		<java.version>21</java.version>
 	</properties>
@@ -82,6 +67,14 @@
 			<artifactId>spring-graphql-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>

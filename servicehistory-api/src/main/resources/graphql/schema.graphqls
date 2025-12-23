@@ -1,0 +1,34 @@
+type Query {
+    patientHistory(patientId: ID!): [MedicalRecord!]!
+    medicalRecord(id: ID!): MedicalRecord
+    doctorRecords(doctorId: ID!): [MedicalRecord!]!
+}
+
+type Mutation {
+    createMedicalRecord(input: MedicalRecordInput!): MedicalRecord!
+    updateMedicalRecord(id: ID!, input: MedicalRecordInput!): MedicalRecord!
+}
+
+type MedicalRecord {
+    id: ID!
+    patientId: ID!
+    doctorId: ID!
+    appointmentId: ID!
+    diagnosis: String!
+    treatment: String
+    medications: String
+    observations: String
+    recordDate: String!
+    followUpDate: String
+}
+
+input MedicalRecordInput {
+    patientId: ID!
+    doctorId: ID!
+    appointmentId: ID!
+    diagnosis: String!
+    treatment: String
+    medications: String
+    observations: String
+    followUpDate: String
+}
