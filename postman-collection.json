@@ -69,6 +69,27 @@
           }
         },
         {
+          "name": "Registrar Enfermeiro",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"enfermeiro@hospitech.com\",\n  \"password\": \"123456\",\n  \"name\": \"Ana Costa\",\n  \"cpf\": \"11122233344\",\n  \"role\": \"NURSE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
           "name": "Login",
           "event": [
             {

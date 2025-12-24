@@ -31,7 +31,7 @@ spring:
     password: guest
 
 jwt:
-  secret: mySecretKeyForHospitech2024
+  secret: mySecretKeyForHospitech2024SuperSecure256BitsKey
   expiration: 86400000
 
 logging:
