@@ -6,6 +6,8 @@ import serviceschedule_api.fiap.serviceschedule_api.entities.Appointment;
 import serviceschedule_api.fiap.serviceschedule_api.entities.User;
 import serviceschedule_api.fiap.serviceschedule_api.enums.AppointmentStatus;
 import serviceschedule_api.fiap.serviceschedule_api.enums.UserRole;
+import serviceschedule_api.fiap.serviceschedule_api.exceptions.BusinessException;
+import serviceschedule_api.fiap.serviceschedule_api.exceptions.ResourceNotFoundException;
 import serviceschedule_api.fiap.serviceschedule_api.repositories.AppointmentRepository;
 import serviceschedule_api.fiap.serviceschedule_api.repositories.UserRepository;
 
@@ -29,13 +31,13 @@ public class AppointmentService {
     
     public Appointment createAppointment(Long patientId, Long doctorId, LocalDateTime appointmentDate, String notes) {
         User patient = userRepository.findById(patientId)
-            .orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+            .orElseThrow(() -> new ResourceNotFoundException("Paciente com ID " + patientId + " não encontrado"));
         
         User doctor = userRepository.findById(doctorId)
-            .orElseThrow(() -> new RuntimeException("Médico não encontrado"));
+            .orElseThrow(() -> new ResourceNotFoundException("Médico com ID " + doctorId + " não encontrado"));
         
         if (doctor.getRole() != UserRole.DOCTOR) {
-            throw new RuntimeException("Usuário não é um médico");
+            throw new BusinessException("Usuário com ID " + doctorId + " não é um médico");
         }
         
         // Verificar conflitos de horário
@@ -43,7 +45,7 @@ public class AppointmentService {
             doctor, appointmentDate.minusMinutes(30), appointmentDate.plusMinutes(30));
         
         if (!conflicts.isEmpty()) {
-            throw new RuntimeException("Horário não disponível");
+            throw new BusinessException("Horário não disponível para o médico. Já existe um agendamento neste período");
         }
         
         Appointment appointment = new Appointment();
@@ -63,19 +65,19 @@ public class AppointmentService {
     
     public List<Appointment> getAppointmentsByPatient(Long patientId) {
         User patient = userRepository.findById(patientId)
-            .orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+            .orElseThrow(() -> new ResourceNotFoundException("Paciente com ID " + patientId + " não encontrado"));
         return appointmentRepository.findByPatient(patient);
     }
     
     public List<Appointment> getAppointmentsByDoctor(Long doctorId) {
         User doctor = userRepository.findById(doctorId)
-            .orElseThrow(() -> new RuntimeException("Médico não encontrado"));
+            .orElseThrow(() -> new ResourceNotFoundException("Médico com ID " + doctorId + " não encontrado"));
         return appointmentRepository.findByDoctor(doctor);
     }
     
     public Appointment updateAppointmentStatus(Long appointmentId, AppointmentStatus status) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
-            .orElseThrow(() -> new RuntimeException("Agendamento não encontrado"));
+            .orElseThrow(() -> new ResourceNotFoundException("Agendamento com ID " + appointmentId + " não encontrado"));
         
         appointment.setStatus(status);
         appointment = appointmentRepository.save(appointment);

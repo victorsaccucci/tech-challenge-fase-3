@@ -29,17 +29,13 @@ public class AppointmentController {
     
     @PostMapping
     public ResponseEntity<Appointment> createAppointment(@RequestBody CreateAppointmentRequest request) {
-        try {
-            Appointment appointment = appointmentService.createAppointment(
-                request.getPatientId(), 
-                request.getDoctorId(), 
-                request.getAppointmentDate(), 
-                request.getNotes()
-            );
-            return ResponseEntity.ok(appointment);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+        Appointment appointment = appointmentService.createAppointment(
+            request.getPatientId(), 
+            request.getDoctorId(), 
+            request.getAppointmentDate(), 
+            request.getNotes()
+        );
+        return ResponseEntity.ok(appointment);
     }
     
     @GetMapping("/patient/{patientId}")
@@ -71,12 +67,8 @@ public class AppointmentController {
     public ResponseEntity<Appointment> updateAppointmentStatus(
             @PathVariable Long appointmentId, 
             @RequestBody UpdateStatusRequest request) {
-        try {
-            Appointment appointment = appointmentService.updateAppointmentStatus(appointmentId, request.getStatus());
-            return ResponseEntity.ok(appointment);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+        Appointment appointment = appointmentService.updateAppointmentStatus(appointmentId, request.getStatus());
+        return ResponseEntity.ok(appointment);
     }
     
     public static class CreateAppointmentRequest {
