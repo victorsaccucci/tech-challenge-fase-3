@@ -30,14 +30,32 @@ public class AppointmentController {
     }
     
     @PostMapping
-    public ResponseEntity<Appointment> createAppointment(@RequestBody CreateAppointmentRequest request) {
+    public ResponseEntity<Map<String, Object>> createAppointment(@RequestBody CreateAppointmentRequest request, Authentication auth) {
+        User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
+        if (currentUser == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Usuário não autenticado");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        }
+        
+        // Apenas médicos e enfermeiros podem criar agendamentos
+        if (currentUser.getRole() == UserRole.PATIENT) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Acesso negado");
+            errorResponse.put("message", "Pacientes não podem criar agendamentos. Entre em contato com a recepção.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+        }
+        
         Appointment appointment = appointmentService.createAppointment(
             request.getPatientId(), 
             request.getDoctorId(), 
             request.getAppointmentDate(), 
             request.getNotes()
         );
-        return ResponseEntity.ok(appointment);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("appointment", appointment);
+        return ResponseEntity.ok(response);
     }
     
     @GetMapping("/patient/{patientId}")
@@ -106,11 +124,30 @@ public class AppointmentController {
     }
     
     @PutMapping("/{appointmentId}/status")
-    public ResponseEntity<Appointment> updateAppointmentStatus(
+    public ResponseEntity<Map<String, Object>> updateAppointmentStatus(
             @PathVariable Long appointmentId, 
-            @RequestBody UpdateStatusRequest request) {
+            @RequestBody UpdateStatusRequest request,
+            Authentication auth) {
+        User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
+        if (currentUser == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Usuário não autenticado");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        }
+        
+        // Apenas médicos e enfermeiros podem atualizar status de agendamentos
+        if (currentUser.getRole() == UserRole.PATIENT) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Acesso negado");
+            errorResponse.put("message", "Pacientes não podem alterar o status de agendamentos.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+        }
+        
         Appointment appointment = appointmentService.updateAppointmentStatus(appointmentId, request.getStatus());
-        return ResponseEntity.ok(appointment);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("appointment", appointment);
+        return ResponseEntity.ok(response);
     }
     
     public static class CreateAppointmentRequest {
