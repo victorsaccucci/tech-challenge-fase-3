@@ -42,11 +42,19 @@ public class AppointmentController {
     
     @GetMapping("/patient/{patientId}")
     public ResponseEntity<Map<String, Object>> getPatientAppointments(@PathVariable Long patientId, Authentication auth) {
-        // Verificar se o usuário pode acessar os dados do paciente
         User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
-        if (currentUser == null || 
-            (currentUser.getRole() == UserRole.PATIENT && !currentUser.getId().equals(patientId))) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        if (currentUser == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Usuário não autenticado");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        }
+        
+        // Regras de acesso: Médicos e Enfermeiros podem ver qualquer paciente, Pacientes só podem ver seus próprios dados
+        if (currentUser.getRole() == UserRole.PATIENT && !currentUser.getId().equals(patientId)) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Acesso negado");
+            errorResponse.put("message", "Pacientes podem visualizar apenas suas próprias consultas");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
         }
         
         List<Appointment> appointments = appointmentService.getAppointmentsByPatient(patientId);
@@ -62,15 +70,39 @@ public class AppointmentController {
     }
     
     @GetMapping("/doctor/{doctorId}")
-    public ResponseEntity<List<Appointment>> getDoctorAppointments(@PathVariable Long doctorId, Authentication auth) {
+    public ResponseEntity<Map<String, Object>> getDoctorAppointments(@PathVariable Long doctorId, Authentication auth) {
         User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
-        if (currentUser == null || 
-            (currentUser.getRole() == UserRole.DOCTOR && !currentUser.getId().equals(doctorId))) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        if (currentUser == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Usuário não autenticado");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        }
+        
+        // Regras de acesso: Médicos só podem ver seus próprios agendamentos, Enfermeiros podem ver todos
+        if (currentUser.getRole() == UserRole.DOCTOR && !currentUser.getId().equals(doctorId)) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Acesso negado");
+            errorResponse.put("message", "Médicos podem visualizar apenas seus próprios agendamentos");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+        }
+        
+        if (currentUser.getRole() == UserRole.PATIENT) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Acesso negado");
+            errorResponse.put("message", "Pacientes não podem visualizar agendamentos de médicos");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
         }
         
         List<Appointment> appointments = appointmentService.getAppointmentsByDoctor(doctorId);
-        return ResponseEntity.ok(appointments);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("appointments", appointments);
+        
+        if (appointments.isEmpty()) {
+            response.put("message", "Médico encontrado, mas não possui agendamentos cadastrados.");
+        }
+        
+        return ResponseEntity.ok(response);
     }
     
     @PutMapping("/{appointmentId}/status")
