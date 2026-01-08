@@ -13,6 +13,8 @@ import serviceschedule_api.fiap.serviceschedule_api.services.AppointmentService;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/appointments")
@@ -39,7 +41,7 @@ public class AppointmentController {
     }
     
     @GetMapping("/patient/{patientId}")
-    public ResponseEntity<List<Appointment>> getPatientAppointments(@PathVariable Long patientId, Authentication auth) {
+    public ResponseEntity<Map<String, Object>> getPatientAppointments(@PathVariable Long patientId, Authentication auth) {
         // Verificar se o usuário pode acessar os dados do paciente
         User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
         if (currentUser == null || 
@@ -48,7 +50,15 @@ public class AppointmentController {
         }
         
         List<Appointment> appointments = appointmentService.getAppointmentsByPatient(patientId);
-        return ResponseEntity.ok(appointments);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("appointments", appointments);
+        
+        if (appointments.isEmpty()) {
+            response.put("message", "Paciente encontrado, mas não possui agendamentos cadastrados.");
+        }
+        
+        return ResponseEntity.ok(response);
     }
     
     @GetMapping("/doctor/{doctorId}")

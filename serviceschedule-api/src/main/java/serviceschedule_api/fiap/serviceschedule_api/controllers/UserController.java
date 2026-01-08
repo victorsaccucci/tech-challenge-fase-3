@@ -30,4 +30,10 @@ public class UserController {
         List<User> nurses = userRepository.findByRole(UserRole.NURSE);
         return ResponseEntity.ok(nurses);
     }
+    
+    @GetMapping("/patients")
+    public ResponseEntity<List<User>> getPatients() {
+        List<User> patients = userRepository.findByRole(UserRole.PATIENT);
+        return ResponseEntity.ok(patients);
+    }
 }
