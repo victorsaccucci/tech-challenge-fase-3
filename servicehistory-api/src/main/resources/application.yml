@@ -26,6 +26,10 @@ spring:
       enabled: true
       path: /graphiql
 
+  jwt:
+     secret: mySecretKeyForHospitech2024SuperSecure256BitsKey
+     expiration: 86400000
+
 logging:
   level:
     servicehistory_api: DEBUG

@@ -39,6 +39,10 @@ spring:
           starttls:
             enable: true
 
+  jwt:
+    secret: mySecretKeyForHospitech2024SuperSecure256BitsKey
+    expiration: 86400000
+
 logging:
   level:
     servicenotify_api.fiap: DEBUG
