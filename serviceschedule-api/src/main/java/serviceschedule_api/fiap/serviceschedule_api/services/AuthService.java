@@ -44,6 +44,10 @@ public class AuthService {
             throw new RuntimeException("Email já cadastrado");
         }
         
+        if (userRepository.findByCpf(request.getCpf()).isPresent()) {
+            throw new RuntimeException("CPF já cadastrado");
+        }
+        
         User user = new User();
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));

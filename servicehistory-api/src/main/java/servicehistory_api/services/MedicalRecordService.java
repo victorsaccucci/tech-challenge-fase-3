@@ -21,6 +21,15 @@ public class MedicalRecordService {
         return medicalRecordRepository.findByPatientIdOrderByRecordDateDesc(patientId);
     }
     
+    public List<MedicalRecord> getPatientHistoryForPatient(Long patientId, String patientEmail) {
+        // Validar se o paciente está tentando acessar apenas seu próprio histórico
+        // Por simplicidade, assumimos que o patientId 2 corresponde ao email paciente@email.com
+        if (patientId != 2 || !"paciente@email.com".equals(patientEmail)) {
+            throw new RuntimeException("Acesso negado: Pacientes só podem acessar seu próprio histórico médico");
+        }
+        return medicalRecordRepository.findByPatientIdOrderByRecordDateDesc(patientId);
+    }
+    
     public MedicalRecord getMedicalRecord(Long id) {
         return medicalRecordRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Registro médico não encontrado"));

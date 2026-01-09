@@ -28,15 +28,7 @@ public class SecurityConfig {
                 // Endpoints públicos
                 .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/**").permitAll()
                 
-                // CRUD de agendamentos - Médicos e Enfermeiros podem criar/editar, Pacientes podem visualizar os seus
-                .requestMatchers("/api/appointments").hasAnyAuthority("DOCTOR", "NURSE")
-                .requestMatchers("/api/appointments/*/status").hasAnyAuthority("DOCTOR", "NURSE")
-                .requestMatchers("/api/appointments/patient/**").hasAnyAuthority("DOCTOR", "NURSE", "PATIENT")
-                .requestMatchers("/api/appointments/doctor/**").hasAnyAuthority("DOCTOR", "NURSE")
-                
-                // Listagem de médicos - Médicos e Enfermeiros
-                .requestMatchers("/api/users/doctors").hasAnyAuthority("DOCTOR", "NURSE")
-                
+                // Todos os outros endpoints requerem autenticação, mas o controle de acesso será feito no controller
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

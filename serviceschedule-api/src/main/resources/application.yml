@@ -29,9 +29,21 @@ spring:
     port: 5672
     username: guest
     password: guest
+    connection-timeout: 30000
+    template:
+      retry:
+        enabled: true
+        max-attempts: 3
+    listener:
+      simple:
+        retry:
+          enabled: true
+          max-attempts: 3
+        missing-queues-fatal: false
+        auto-startup: true
 
 jwt:
-  secret: mySecretKeyForHospitech2024SuperSecure256BitsKey
+  secret: ${JWT_SECRET:mySecretKeyForHospitech2024SuperSecure256BitsKeyWithExtraCharactersToMeet256Bits}
   expiration: 86400000
 
 logging:
@@ -43,3 +55,6 @@ management:
     web:
       exposure:
         include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized

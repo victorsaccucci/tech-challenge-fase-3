@@ -1,5 +1,8 @@
 package servicehistory_api.controllers;
 
+import graphql.GraphQLError;
+import graphql.GraphqlErrorBuilder;
+import graphql.schema.DataFetchingEnvironment;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -20,36 +23,115 @@ public class MedicalRecordController {
     }
     
     @QueryMapping
-    public List<MedicalRecord> patientHistory(@Argument Long patientId) {
-        return medicalRecordService.getPatientHistory(patientId);
+    public List<MedicalRecord> patientHistory(@Argument Long patientId, DataFetchingEnvironment env) {
+        String role = env.getGraphQlContext().get("role");
+        String username = env.getGraphQlContext().get("username");
+        
+        if (role == null) {
+            throw new RuntimeException("Acesso negado: Token de autenticação obrigatório");
+        }
+        
+        // Médicos e enfermeiros podem ver qualquer histórico
+        if ("DOCTOR".equals(role) || "NURSE".equals(role)) {
+            return medicalRecordService.getPatientHistory(patientId);
+        }
+        
+        // Pacientes podem ver apenas seu próprio histórico
+        if ("PATIENT".equals(role)) {
+            // Validar se é o próprio paciente
+            Long currentUserId = env.getGraphQlContext().get("userId");
+            if (!patientId.equals(currentUserId)) {
+                throw new RuntimeException("Acesso negado: Pacientes só podem acessar seu próprio histórico médico");
+            }
+            return medicalRecordService.getPatientHistory(patientId);
+        }
+        
+        throw new RuntimeException("Acesso negado: Tipo de usuário não reconhecido");
     }
     
     @QueryMapping
-    public MedicalRecord medicalRecord(@Argument Long id) {
+    public MedicalRecord medicalRecord(@Argument Long id, DataFetchingEnvironment env) {
+        String role = env.getGraphQlContext().get("role");
+        
+        if (role == null) {
+            throw new RuntimeException("Acesso negado: Token de autenticação obrigatório");
+        }
+        
+        if ("PATIENT".equals(role)) {
+            throw new RuntimeException("Acesso negado. Pacientes não podem acessar registros médicos individuais. Use a consulta de histórico do paciente.");
+        }
+        
+        if (!"DOCTOR".equals(role) && !"NURSE".equals(role)) {
+            throw new RuntimeException("Acesso negado. Apenas médicos e enfermeiros podem acessar registros médicos.");
+        }
+        
         return medicalRecordService.getMedicalRecord(id);
     }
     
     @QueryMapping
-    public List<MedicalRecord> doctorRecords(@Argument Long doctorId) {
-        return medicalRecordService.getDoctorRecords(doctorId);
+    public List<MedicalRecord> doctorRecords(@Argument Long doctorId, DataFetchingEnvironment env) {
+        String role = env.getGraphQlContext().get("role");
+        
+        if ("PATIENT".equals(role)) {
+            throw new RuntimeException("Pacientes não podem acessar registros de médicos.");
+        }
+        
+        if (!"DOCTOR".equals(role) && !"NURSE".equals(role)) {
+            throw new RuntimeException("Acesso negado. Apenas médicos e enfermeiros podem acessar registros de médicos.");
+        }
+        
+        try {
+            return medicalRecordService.getDoctorRecords(doctorId);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao buscar registros do médico: " + e.getMessage());
+        }
     }
     
     @MutationMapping
-    public MedicalRecord createMedicalRecord(@Argument MedicalRecordInput input) {
-        return medicalRecordService.createMedicalRecord(
-            input.getPatientId(),
-            input.getDoctorId(),
-            input.getAppointmentId(),
-            input.getDiagnosis(),
-            input.getTreatment(),
-            input.getMedications(),
-            input.getObservations(),
-            input.getFollowUpDate()
-        );
+    public MedicalRecord createMedicalRecord(@Argument MedicalRecordInput input, DataFetchingEnvironment env) {
+        String role = env.getGraphQlContext().get("role");
+        
+        if (role == null) {
+            throw new RuntimeException("Acesso negado: Token de autenticação obrigatório");
+        }
+        
+        if ("PATIENT".equals(role)) {
+            throw new RuntimeException("Acesso negado: Pacientes não podem criar registros médicos");
+        }
+        
+        if (!"DOCTOR".equals(role) && !"NURSE".equals(role)) {
+            throw new RuntimeException("Acesso negado: Apenas médicos e enfermeiros podem criar registros médicos");
+        }
+        
+        try {
+            return medicalRecordService.createMedicalRecord(
+                input.getPatientId(),
+                input.getDoctorId(),
+                input.getAppointmentId(),
+                input.getDiagnosis(),
+                input.getTreatment(),
+                input.getMedications(),
+                input.getObservations(),
+                input.getFollowUpDate()
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao criar registro médico: " + e.getMessage());
+        }
     }
     
     @MutationMapping
-    public MedicalRecord updateMedicalRecord(@Argument Long id, @Argument MedicalRecordInput input) {
+    public MedicalRecord updateMedicalRecord(@Argument Long id, @Argument MedicalRecordInput input, DataFetchingEnvironment env) {
+        String role = env.getGraphQlContext().get("role");
+        
+        if ("PATIENT".equals(role)) {
+            throw new RuntimeException("Acesso negado. Pacientes não podem editar registros médicos. Apenas profissionais de saúde podem modificar consultas.");
+        }
+        
+        // Apenas médicos podem editar histórico
+        if (!"DOCTOR".equals(role)) {
+            throw new RuntimeException("Acesso negado. Apenas médicos podem editar registros médicos.");
+        }
+        
         return medicalRecordService.updateMedicalRecord(id, input);
     }
     

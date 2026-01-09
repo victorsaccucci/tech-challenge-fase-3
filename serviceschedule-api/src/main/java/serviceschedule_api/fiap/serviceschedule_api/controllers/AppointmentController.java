@@ -31,31 +31,45 @@ public class AppointmentController {
     
     @PostMapping
     public ResponseEntity<Map<String, Object>> createAppointment(@RequestBody CreateAppointmentRequest request, Authentication auth) {
-        User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
-        if (currentUser == null) {
+        try {
+            if (auth == null || auth.getName() == null) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Usuário não autenticado");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+            }
+            
+            User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
+            if (currentUser == null) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Usuário não encontrado");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+            }
+            
+            // Apenas médicos e enfermeiros podem criar agendamentos
+            if (currentUser.getRole() == UserRole.PATIENT) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("error", "Acesso negado");
+                errorResponse.put("message", "Pacientes não podem criar agendamentos. Entre em contato com a recepção.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+            }
+            
+            Appointment appointment = appointmentService.createAppointment(
+                request.getPatientId(), 
+                request.getDoctorId(), 
+                request.getAppointmentDate(), 
+                request.getNotes()
+            );
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("appointment", appointment);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Usuário não autenticado");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+            errorResponse.put("error", "Erro interno");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
-        
-        // Apenas médicos e enfermeiros podem criar agendamentos
-        if (currentUser.getRole() == UserRole.PATIENT) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Acesso negado");
-            errorResponse.put("message", "Pacientes não podem criar agendamentos. Entre em contato com a recepção.");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
-        }
-        
-        Appointment appointment = appointmentService.createAppointment(
-            request.getPatientId(), 
-            request.getDoctorId(), 
-            request.getAppointmentDate(), 
-            request.getNotes()
-        );
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("appointment", appointment);
-        return ResponseEntity.ok(response);
     }
     
     @GetMapping("/patient/{patientId}")
@@ -128,10 +142,16 @@ public class AppointmentController {
             @PathVariable Long appointmentId, 
             @RequestBody UpdateStatusRequest request,
             Authentication auth) {
+        if (auth == null || auth.getName() == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Usuário não autenticado");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        }
+        
         User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
         if (currentUser == null) {
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Usuário não autenticado");
+            errorResponse.put("error", "Usuário não encontrado");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
         }
         

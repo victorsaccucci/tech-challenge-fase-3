@@ -14,7 +14,7 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
     
-    @Value("${jwt.secret:mySecretKey}")
+    @Value("${jwt.secret:mySecretKeyForHospitech2024SuperSecure256BitsKey}")
     private String secret;
     
     @Value("${jwt.expiration:86400000}")
@@ -49,10 +49,10 @@ public class JwtUtil {
     
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
-                .setSigningKey(getSigningKey())
+                .verifyWith(getSigningKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
     
     public Boolean isTokenExpired(String token) {

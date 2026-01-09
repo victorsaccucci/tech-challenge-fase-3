@@ -13,13 +13,17 @@ public class SecurityConfig {
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/**").permitAll()
-                .anyRequest().authenticated()
-            );
-        
-        return http.build();
+        try {
+            http.csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                    .requestMatchers("/actuator/**").permitAll()
+                    .anyRequest().authenticated()
+                );
+            
+            return http.build();
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao configurar segurança: " + e.getMessage(), e);
+        }
     }
 }

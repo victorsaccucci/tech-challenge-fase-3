@@ -2,6 +2,7 @@ package servicehistory_api.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.graphql.server.WebGraphQlInterceptor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -13,19 +14,27 @@ public class SecurityConfig {
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Endpoints públicos
-                .requestMatchers("/actuator/**", "/h2-console/**").permitAll()
-                
-                // GraphQL - Médicos podem visualizar e editar, Enfermeiros podem registrar e acessar
-                // Pacientes podem visualizar apenas os seus próprios registros
-                .requestMatchers("/graphql").permitAll() // Controle de acesso será feito no nível do resolver
-                
-                .anyRequest().authenticated()
-            );
-        
-        return http.build();
+        try {
+            http.csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                    // Endpoints públicos
+                    .requestMatchers("/actuator/**", "/h2-console/**").permitAll()
+                    
+                    // GraphQL - Controle de acesso será feito no interceptor
+                    .requestMatchers("/graphql").permitAll()
+                    
+                    .anyRequest().authenticated()
+                );
+            
+            return http.build();
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao configurar segurança: " + e.getMessage(), e);
+        }
+    }
+    
+    @Bean
+    public WebGraphQlInterceptor authInterceptor(JwtUtil jwtUtil) {
+        return new GraphQLAuthInterceptor(jwtUtil);
     }
 }

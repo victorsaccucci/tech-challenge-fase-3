@@ -39,7 +39,14 @@ public class MedicalRecord {
     private String observations;
     
     @Column(nullable = false)
-    private LocalDateTime recordDate = LocalDateTime.now();
+    private LocalDateTime recordDate;
+    
+    @PrePersist
+    protected void onCreate() {
+        if (recordDate == null) {
+            recordDate = LocalDateTime.now();
+        }
+    }
     
     @Column
     private LocalDateTime followUpDate;

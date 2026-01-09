@@ -25,11 +25,25 @@ public class UserController {
     
     @GetMapping("/doctors")
     public ResponseEntity<Map<String, Object>> getDoctors(Authentication auth) {
-        User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
-        if (currentUser == null) {
+        if (auth == null || auth.getName() == null) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Usuário não autenticado");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        }
+        
+        User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
+        if (currentUser == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Usuário não encontrado");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        }
+        
+        // Apenas médicos e enfermeiros podem listar médicos
+        if (currentUser.getRole() == UserRole.PATIENT) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Acesso negado");
+            errorResponse.put("message", "Pacientes não podem visualizar lista de médicos.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
         }
         
         List<User> doctors = userRepository.findByRole(UserRole.DOCTOR);
@@ -40,10 +54,16 @@ public class UserController {
     
     @GetMapping("/nurses")
     public ResponseEntity<Map<String, Object>> getNurses(Authentication auth) {
+        if (auth == null || auth.getName() == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Usuário não autenticado");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        }
+        
         User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
         if (currentUser == null) {
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Usuário não autenticado");
+            errorResponse.put("error", "Usuário não encontrado");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
         }
         
@@ -63,10 +83,16 @@ public class UserController {
     
     @GetMapping("/patients")
     public ResponseEntity<Map<String, Object>> getPatients(Authentication auth) {
+        if (auth == null || auth.getName() == null) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Usuário não autenticado");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        }
+        
         User currentUser = userRepository.findByEmail(auth.getName()).orElse(null);
         if (currentUser == null) {
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Usuário não autenticado");
+            errorResponse.put("error", "Usuário não encontrado");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
         }
         
