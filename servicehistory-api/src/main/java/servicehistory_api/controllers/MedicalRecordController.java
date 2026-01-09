@@ -36,14 +36,9 @@ public class MedicalRecordController {
             return medicalRecordService.getPatientHistory(patientId);
         }
         
-        // Pacientes podem ver apenas seu próprio histórico
+        // Pacientes não podem acessar histórico médico diretamente
         if ("PATIENT".equals(role)) {
-            // Validar se é o próprio paciente
-            Long currentUserId = env.getGraphQlContext().get("userId");
-            if (!patientId.equals(currentUserId)) {
-                throw new RuntimeException("Acesso negado: Pacientes só podem acessar seu próprio histórico médico");
-            }
-            return medicalRecordService.getPatientHistory(patientId);
+            throw new RuntimeException("Acesso negado: Pacientes não podem acessar histórico médico");
         }
         
         throw new RuntimeException("Acesso negado: Tipo de usuário não reconhecido");
