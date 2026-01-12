@@ -41,12 +41,12 @@ public class AppointmentService {
             throw new BusinessException("Usuário com ID " + doctorId + " não é um médico");
         }
         
-        // Verificar conflitos de horário
+        // Verificar conflitos de horário (mesmo horário exato)
         List<Appointment> conflicts = appointmentRepository.findByDoctorAndDateRange(
-            doctor, appointmentDate.minusMinutes(30), appointmentDate.plusMinutes(30));
+            doctor, appointmentDate, appointmentDate);
         
         if (!conflicts.isEmpty()) {
-            throw new BusinessException("Horário não disponível para o médico. Já existe um agendamento neste período");
+            throw new BusinessException("Horário não disponível para o médico. Já existe um agendamento neste horário exato");
         }
         
         Appointment appointment = new Appointment();
@@ -106,20 +106,40 @@ public class AppointmentService {
         }
     }
     
-    @Scheduled(fixedRate = 300000) // A cada 5 minutos
+    @Scheduled(fixedRate = 60000) // A cada 1 minuto
     public void checkUpcomingAppointments() {
         System.out.println("Scheduler executando - " + LocalDateTime.now());
         
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime reminderTime = now.plusHours(2);
+        LocalDateTime reminderStart = now.plusMinutes(5);
+        LocalDateTime reminderEnd = now.plusMinutes(10);
         
         List<Appointment> upcomingAppointments = appointmentRepository
-            .findByAppointmentDateBetweenAndStatus(now, reminderTime, AppointmentStatus.SCHEDULED);
+            .findByAppointmentDateBetweenAndStatus(reminderStart, reminderEnd, AppointmentStatus.SCHEDULED);
         
-        System.out.println("Encontrados " + upcomingAppointments.size() + " agendamentos para lembrete");
+        System.out.println("Encontrados " + upcomingAppointments.size() + " agendamentos para lembrete entre " + 
+                          reminderStart + " e " + reminderEnd);
         
         for (Appointment appointment : upcomingAppointments) {
             System.out.println("Enviando lembrete para agendamento ID: " + appointment.getId() + 
+                             " - Data: " + appointment.getAppointmentDate());
+            sendNotification(appointment, "APPOINTMENT_REMINDER");
+        }
+    }
+    
+    public void sendTestReminders() {
+        System.out.println("Executando teste de lembretes - " + LocalDateTime.now());
+        
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime testEnd = now.plusHours(24);
+        
+        List<Appointment> testAppointments = appointmentRepository
+            .findByAppointmentDateBetweenAndStatus(now, testEnd, AppointmentStatus.SCHEDULED);
+        
+        System.out.println("Encontrados " + testAppointments.size() + " agendamentos para teste de lembrete");
+        
+        for (Appointment appointment : testAppointments) {
+            System.out.println("Enviando lembrete de teste para agendamento ID: " + appointment.getId() + 
                              " - Data: " + appointment.getAppointmentDate());
             sendNotification(appointment, "APPOINTMENT_REMINDER");
         }

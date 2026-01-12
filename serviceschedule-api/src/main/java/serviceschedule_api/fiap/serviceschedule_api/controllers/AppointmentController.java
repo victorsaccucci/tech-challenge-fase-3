@@ -177,6 +177,13 @@ public class AppointmentController {
         return ResponseEntity.ok("Scheduler executado - verifique os logs");
     }
     
+    @PostMapping("/test-reminders")
+    public ResponseEntity<String> testReminders() {
+        System.out.println("Executando teste de lembretes...");
+        appointmentService.sendTestReminders();
+        return ResponseEntity.ok("Teste de lembretes executado - verifique os logs");
+    }
+    
     public static class CreateAppointmentRequest {
         private Long patientId;
         private Long doctorId;
