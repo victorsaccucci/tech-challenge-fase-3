@@ -98,9 +98,10 @@ public class AppointmentService {
             message.setEventType(eventType);
             
             rabbitTemplate.convertAndSend("appointment.exchange", "appointment.notification", message);
+            System.out.println("✅ Notification sent successfully for appointment: " + appointment.getId());
         } catch (Exception e) {
-            // Log error but don't fail the main operation
-            System.err.println("Failed to send notification: " + e.getMessage());
+            System.err.println("❌ Failed to send notification: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     

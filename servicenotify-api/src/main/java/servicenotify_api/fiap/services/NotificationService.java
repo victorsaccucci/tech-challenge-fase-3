@@ -24,8 +24,15 @@ public class NotificationService {
     @RabbitListener(queues = "appointment.notification.queue")
     public void handleAppointmentNotification(AppointmentMessage message) {
         try {
+            System.out.println("📨 Received notification: " + message.getEventType() + " for appointment " + message.getAppointmentId());
+            
+            if (message.getAppointmentId() == null || message.getPatientEmail() == null || message.getAppointmentDate() == null) {
+                System.err.println("❌ Missing required fields in message");
+                return;
+            }
+            
             String subject = getSubjectByEventType(message.getEventType());
-            String emailMessage = buildEmailMessage(message);
+            String emailMessage = buildEmailMessage(message.getAppointmentDate(), message.getEventType());
             
             // Criar notificação para o paciente
             createAndSendNotification(
@@ -36,17 +43,22 @@ public class NotificationService {
                 "EMAIL"
             );
             
-            // Criar notificação para o médico
-            createAndSendNotification(
-                message.getAppointmentId(),
-                message.getDoctorEmail(),
-                subject,
-                emailMessage,
-                "EMAIL"
-            );
+            // Criar notificação para o médico se o email estiver presente
+            if (message.getDoctorEmail() != null && !message.getDoctorEmail().isEmpty()) {
+                createAndSendNotification(
+                    message.getAppointmentId(),
+                    message.getDoctorEmail(),
+                    subject,
+                    emailMessage,
+                    "EMAIL"
+                );
+            }
+            
+            System.out.println("✅ Notification processed successfully for appointment: " + message.getAppointmentId());
             
         } catch (Exception e) {
-            System.err.println("Error processing notification: " + e.getMessage());
+            System.err.println("❌ Error processing notification: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
@@ -95,11 +107,11 @@ public class NotificationService {
         };
     }
     
-    private String buildEmailMessage(AppointmentMessage message) {
+    private String buildEmailMessage(LocalDateTime appointmentDate, String eventType) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        String formattedDate = message.getAppointmentDate().format(formatter);
+        String formattedDate = appointmentDate.format(formatter);
         
-        return switch (message.getEventType()) {
+        return switch (eventType) {
             case "APPOINTMENT_CREATED" -> 
                 "Sua consulta foi agendada para " + formattedDate + ".\n\n" +
                 "Por favor, chegue com 15 minutos de antecedência.\n\n" +
