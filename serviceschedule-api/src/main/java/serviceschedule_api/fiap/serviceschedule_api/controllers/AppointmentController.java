@@ -170,6 +170,12 @@ public class AppointmentController {
         return ResponseEntity.ok(response);
     }
     
+    @PostMapping("/test-scheduler")
+    public ResponseEntity<String> testScheduler() {
+        appointmentService.checkUpcomingAppointments();
+        return ResponseEntity.ok("Scheduler executado manualmente");
+    }
+    
     public static class CreateAppointmentRequest {
         private Long patientId;
         private Long doctorId;

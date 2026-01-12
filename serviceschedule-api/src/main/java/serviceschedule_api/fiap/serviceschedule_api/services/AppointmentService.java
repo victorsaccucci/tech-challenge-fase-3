@@ -1,6 +1,7 @@
 package serviceschedule_api.fiap.serviceschedule_api.services;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import serviceschedule_api.fiap.serviceschedule_api.entities.Appointment;
 import serviceschedule_api.fiap.serviceschedule_api.entities.User;
@@ -102,6 +103,25 @@ public class AppointmentService {
         } catch (Exception e) {
             System.err.println("❌ Failed to send notification: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+    
+    @Scheduled(fixedRate = 300000) // A cada 5 minutos
+    public void checkUpcomingAppointments() {
+        System.out.println("🔍 Scheduler executando - " + LocalDateTime.now());
+        
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime reminderTime = now.plusHours(2);
+        
+        List<Appointment> upcomingAppointments = appointmentRepository
+            .findByAppointmentDateBetweenAndStatus(now, reminderTime, AppointmentStatus.SCHEDULED);
+        
+        System.out.println("📋 Encontrados " + upcomingAppointments.size() + " agendamentos para lembrete");
+        
+        for (Appointment appointment : upcomingAppointments) {
+            System.out.println("🔔 Enviando lembrete para agendamento ID: " + appointment.getId() + 
+                             " - Data: " + appointment.getAppointmentDate());
+            sendNotification(appointment, "APPOINTMENT_REMINDER");
         }
     }
     
