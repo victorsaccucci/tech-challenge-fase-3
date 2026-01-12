@@ -1,5 +1,7 @@
 package serviceschedule_api.fiap.serviceschedule_api.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,8 @@ import java.util.List;
 @Service
 public class AppointmentService {
     
+    private static final Logger logger = LoggerFactory.getLogger(AppointmentService.class);
+    
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
     private final RabbitTemplate rabbitTemplate;
@@ -31,6 +35,10 @@ public class AppointmentService {
     }
     
     public Appointment createAppointment(Long patientId, Long doctorId, LocalDateTime appointmentDate, String notes) {
+        if (appointmentDate.isBefore(LocalDateTime.now())) {
+            throw new BusinessException("Data do agendamento deve ser no futuro");
+        }
+        
         User patient = userRepository.findById(patientId)
             .orElseThrow(() -> new ResourceNotFoundException("Paciente com ID " + patientId + " não encontrado"));
         
@@ -41,9 +49,9 @@ public class AppointmentService {
             throw new BusinessException("Usuário com ID " + doctorId + " não é um médico");
         }
         
-        // Verificar conflitos de horário (mesmo horário exato)
-        List<Appointment> conflicts = appointmentRepository.findByDoctorAndDateRange(
-            doctor, appointmentDate, appointmentDate);
+        // Verificar conflitos de horário
+        List<Appointment> conflicts = appointmentRepository.findByDoctorAndAppointmentDate(
+            doctor, appointmentDate);
         
         if (!conflicts.isEmpty()) {
             throw new BusinessException("Horário não disponível para o médico. Já existe um agendamento neste horário exato");
@@ -73,6 +81,11 @@ public class AppointmentService {
     public List<Appointment> getAppointmentsByDoctor(Long doctorId) {
         User doctor = userRepository.findById(doctorId)
             .orElseThrow(() -> new ResourceNotFoundException("Médico com ID " + doctorId + " não encontrado"));
+        
+        if (doctor.getRole() != UserRole.DOCTOR) {
+            throw new BusinessException("Usuário com ID " + doctorId + " não é um médico");
+        }
+        
         return appointmentRepository.findByDoctor(doctor);
     }
     
@@ -99,49 +112,43 @@ public class AppointmentService {
             message.setEventType(eventType);
             
             rabbitTemplate.convertAndSend("appointment.exchange", "appointment.notification", message);
-            System.out.println("Notification sent successfully for appointment: " + appointment.getId());
+            logger.info("Notification sent successfully for appointment: {}", appointment.getId());
         } catch (Exception e) {
-            System.err.println("Failed to send notification: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Failed to send notification for appointment {}: {}", appointment.getId(), e.getMessage());
         }
     }
     
     @Scheduled(fixedRate = 60000) // A cada 1 minuto
     public void checkUpcomingAppointments() {
-        System.out.println("Scheduler executando - " + LocalDateTime.now());
+        logger.debug("Scheduler executando - {}", LocalDateTime.now());
         
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime reminderStart = now.plusMinutes(5);
         LocalDateTime reminderEnd = now.plusMinutes(10);
         
-        List<Appointment> upcomingAppointments = appointmentRepository
-            .findByAppointmentDateBetweenAndStatus(reminderStart, reminderEnd, AppointmentStatus.SCHEDULED);
-        
-        System.out.println("Encontrados " + upcomingAppointments.size() + " agendamentos para lembrete entre " + 
-                          reminderStart + " e " + reminderEnd);
-        
-        for (Appointment appointment : upcomingAppointments) {
-            System.out.println("Enviando lembrete para agendamento ID: " + appointment.getId() + 
-                             " - Data: " + appointment.getAppointmentDate());
-            sendNotification(appointment, "APPOINTMENT_REMINDER");
-        }
+        processReminders(reminderStart, reminderEnd, "APPOINTMENT_REMINDER");
     }
     
     public void sendTestReminders() {
-        System.out.println("Executando teste de lembretes - " + LocalDateTime.now());
+        logger.info("Executando teste de lembretes - {}", LocalDateTime.now());
         
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime testEnd = now.plusHours(24);
         
-        List<Appointment> testAppointments = appointmentRepository
-            .findByAppointmentDateBetweenAndStatus(now, testEnd, AppointmentStatus.SCHEDULED);
+        processReminders(now, testEnd, "APPOINTMENT_REMINDER");
+    }
+    
+    private void processReminders(LocalDateTime start, LocalDateTime end, String eventType) {
+        List<Appointment> appointments = appointmentRepository
+            .findByAppointmentDateBetweenAndStatus(start, end, AppointmentStatus.SCHEDULED);
         
-        System.out.println("Encontrados " + testAppointments.size() + " agendamentos para teste de lembrete");
+        logger.info("Encontrados {} agendamentos para lembrete entre {} e {}", 
+                   appointments.size(), start, end);
         
-        for (Appointment appointment : testAppointments) {
-            System.out.println("Enviando lembrete de teste para agendamento ID: " + appointment.getId() + 
-                             " - Data: " + appointment.getAppointmentDate());
-            sendNotification(appointment, "APPOINTMENT_REMINDER");
+        for (Appointment appointment : appointments) {
+            logger.debug("Enviando lembrete para agendamento ID: {} - Data: {}", 
+                        appointment.getId(), appointment.getAppointmentDate());
+            sendNotification(appointment, eventType);
         }
     }
     
@@ -152,7 +159,6 @@ public class AppointmentService {
         private LocalDateTime appointmentDate;
         private String eventType;
         
-        // Getters and setters
         public Long getAppointmentId() { return appointmentId; }
         public void setAppointmentId(Long appointmentId) { this.appointmentId = appointmentId; }
         public String getPatientEmail() { return patientEmail; }

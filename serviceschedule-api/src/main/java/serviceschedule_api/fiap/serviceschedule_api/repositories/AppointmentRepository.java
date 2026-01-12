@@ -19,6 +19,9 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     @Query("SELECT a FROM Appointment a WHERE a.appointmentDate BETWEEN ?1 AND ?2")
     List<Appointment> findByAppointmentDateBetween(LocalDateTime start, LocalDateTime end);
     
+    @Query("SELECT a FROM Appointment a WHERE a.doctor = ?1 AND a.appointmentDate = ?2")
+    List<Appointment> findByDoctorAndAppointmentDate(User doctor, LocalDateTime appointmentDate);
+    
     @Query("SELECT a FROM Appointment a WHERE a.doctor = ?1 AND a.appointmentDate BETWEEN ?2 AND ?3")
     List<Appointment> findByDoctorAndDateRange(User doctor, LocalDateTime start, LocalDateTime end);
     

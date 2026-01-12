@@ -1,5 +1,7 @@
 package servicenotify_api.fiap.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -13,6 +15,9 @@ import java.time.format.DateTimeFormatter;
 @Service
 public class NotificationService {
     
+    private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    
     private final NotificationRepository notificationRepository;
     private final JavaMailSender mailSender;
     
@@ -24,10 +29,11 @@ public class NotificationService {
     @RabbitListener(queues = "appointment.notification.queue")
     public void handleAppointmentNotification(AppointmentMessage message) {
         try {
-            System.out.println("Received notification: " + message.getEventType() + " for appointment " + message.getAppointmentId());
+            logger.info("Received notification: {} for appointment {}", 
+                       sanitizeForLog(message.getEventType()), message.getAppointmentId());
             
             if (message.getAppointmentId() == null || message.getPatientEmail() == null || message.getAppointmentDate() == null) {
-                System.err.println("Missing required fields in message");
+                logger.error("Missing required fields in message");
                 return;
             }
             
@@ -54,11 +60,11 @@ public class NotificationService {
                 );
             }
             
-            System.out.println("Notification processed successfully for appointment: " + message.getAppointmentId());
+            logger.info("Notification processed successfully for appointment: {}", message.getAppointmentId());
             
         } catch (Exception e) {
-            System.err.println("Error processing notification: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error processing notification for appointment {}: {}", 
+                        message.getAppointmentId(), e.getMessage());
         }
     }
     
@@ -91,11 +97,17 @@ public class NotificationService {
             notification.setSentAt(LocalDateTime.now());
             
         } catch (Exception e) {
+            logger.error("Failed to send email to {}: {}", 
+                        notification.getRecipientEmail(), e.getMessage());
             notification.setStatus("FAILED");
             notification.setErrorMessage(e.getMessage());
         }
         
-        notificationRepository.save(notification);
+        try {
+            notificationRepository.save(notification);
+        } catch (Exception e) {
+            logger.error("Failed to save notification status: {}", e.getMessage());
+        }
     }
     
     private String getSubjectByEventType(String eventType) {
@@ -108,8 +120,7 @@ public class NotificationService {
     }
     
     private String buildEmailMessage(LocalDateTime appointmentDate, String eventType) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        String formattedDate = appointmentDate.format(formatter);
+        String formattedDate = appointmentDate.format(DATE_FORMATTER);
         
         return switch (eventType) {
             case "APPOINTMENT_CREATED" -> 
@@ -127,6 +138,11 @@ public class NotificationService {
             
             default -> "Você tem uma notificação sobre sua consulta de " + formattedDate + ".";
         };
+    }
+    
+    private String sanitizeForLog(String input) {
+        if (input == null) return "null";
+        return input.replaceAll("[\r\n\t]", "_");
     }
     
     public static class AppointmentMessage {
