@@ -172,8 +172,9 @@ public class AppointmentController {
     
     @PostMapping("/test-scheduler")
     public ResponseEntity<String> testScheduler() {
+        System.out.println("Executando scheduler manualmente...");
         appointmentService.checkUpcomingAppointments();
-        return ResponseEntity.ok("Scheduler executado manualmente");
+        return ResponseEntity.ok("Scheduler executado - verifique os logs");
     }
     
     public static class CreateAppointmentRequest {

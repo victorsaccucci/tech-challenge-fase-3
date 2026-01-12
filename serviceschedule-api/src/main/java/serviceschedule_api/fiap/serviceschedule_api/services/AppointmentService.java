@@ -99,16 +99,16 @@ public class AppointmentService {
             message.setEventType(eventType);
             
             rabbitTemplate.convertAndSend("appointment.exchange", "appointment.notification", message);
-            System.out.println("✅ Notification sent successfully for appointment: " + appointment.getId());
+            System.out.println("Notification sent successfully for appointment: " + appointment.getId());
         } catch (Exception e) {
-            System.err.println("❌ Failed to send notification: " + e.getMessage());
+            System.err.println("Failed to send notification: " + e.getMessage());
             e.printStackTrace();
         }
     }
     
     @Scheduled(fixedRate = 300000) // A cada 5 minutos
     public void checkUpcomingAppointments() {
-        System.out.println("🔍 Scheduler executando - " + LocalDateTime.now());
+        System.out.println("Scheduler executando - " + LocalDateTime.now());
         
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime reminderTime = now.plusHours(2);
@@ -116,10 +116,10 @@ public class AppointmentService {
         List<Appointment> upcomingAppointments = appointmentRepository
             .findByAppointmentDateBetweenAndStatus(now, reminderTime, AppointmentStatus.SCHEDULED);
         
-        System.out.println("📋 Encontrados " + upcomingAppointments.size() + " agendamentos para lembrete");
+        System.out.println("Encontrados " + upcomingAppointments.size() + " agendamentos para lembrete");
         
         for (Appointment appointment : upcomingAppointments) {
-            System.out.println("🔔 Enviando lembrete para agendamento ID: " + appointment.getId() + 
+            System.out.println("Enviando lembrete para agendamento ID: " + appointment.getId() + 
                              " - Data: " + appointment.getAppointmentDate());
             sendNotification(appointment, "APPOINTMENT_REMINDER");
         }

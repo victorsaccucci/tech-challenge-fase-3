@@ -26,7 +26,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Endpoints públicos
-                .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/**").permitAll()
+                .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/**", "/api/appointments/test-scheduler").permitAll()
                 
                 // Todos os outros endpoints requerem autenticação, mas o controle de acesso será feito no controller
                 .anyRequest().authenticated()

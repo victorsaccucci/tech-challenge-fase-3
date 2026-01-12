@@ -24,10 +24,10 @@ public class NotificationService {
     @RabbitListener(queues = "appointment.notification.queue")
     public void handleAppointmentNotification(AppointmentMessage message) {
         try {
-            System.out.println("📨 Received notification: " + message.getEventType() + " for appointment " + message.getAppointmentId());
+            System.out.println("Received notification: " + message.getEventType() + " for appointment " + message.getAppointmentId());
             
             if (message.getAppointmentId() == null || message.getPatientEmail() == null || message.getAppointmentDate() == null) {
-                System.err.println("❌ Missing required fields in message");
+                System.err.println("Missing required fields in message");
                 return;
             }
             
@@ -54,10 +54,10 @@ public class NotificationService {
                 );
             }
             
-            System.out.println("✅ Notification processed successfully for appointment: " + message.getAppointmentId());
+            System.out.println("Notification processed successfully for appointment: " + message.getAppointmentId());
             
         } catch (Exception e) {
-            System.err.println("❌ Error processing notification: " + e.getMessage());
+            System.err.println("Error processing notification: " + e.getMessage());
             e.printStackTrace();
         }
     }
